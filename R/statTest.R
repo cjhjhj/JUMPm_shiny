@@ -4,17 +4,13 @@ library(limma)
 ##################
 ## Subroutines  ##
 ##################
-limmaTest <- function(data, level, samples, comparison, comparisonNames, design, contMatrix) {
+limmaTest <- function(data, entry, samples, comparison, comparisonNames, design, contMatrix) {
   subData = log(data[, which(colnames(data) %in% samples)], 2)
   nGroups = length(comparison)
   fit = lmFit(subData, design) ## Log2-transformation
   fit = contrasts.fit(fit, contMatrix)
   fit = eBayes(fit)
-  if (level == "peptide") {
-    elemList = data[, 1]
-  } else if (level == "protein") {
-    elemList = data[, 2]
-  }
+  elemList = entry
   rownames(subData) = elemList
   result = topTable(fit, genelist = elemList, n = nrow(data), sort = "none")
   ## Change column names of the result table
@@ -33,7 +29,7 @@ limmaTest <- function(data, level, samples, comparison, comparisonNames, design,
   colnames(result)[which(names(result) == "P.Value")] = "p-value"
   colnames(result)[which(names(result) == "adj.P.Value")] = "FDR"
   colnames(result)[which(names(result) == "adj.P.Val")] = "FDR"
-  colnames(result)[1] = level
+  colnames(result)[1] = "Feature"
   return (list(res = result, data = subData))
 }
 
@@ -49,7 +45,7 @@ fitCauchy <- function(x) {
   res <- nlminb(theta.start,cauchy.fit, x = x,lower=c(-10,1e-20),upper=c(10,10))
 }
 
-cauchyTest <- function(data, level, comparison, comparisonNames) {
+cauchyTest <- function(data, entry, comparison, comparisonNames) {
   ## Assumption: there are only two groups, i.e. two reporters
   subData = log(data[, which(colnames(data) %in% comparison)], 2)
   log2FC = subData[, 1] - subData[, 2] ## Log2-trasnformed data
@@ -61,18 +57,13 @@ cauchyTest <- function(data, level, comparison, comparisonNames) {
   })
   pval = 2 * pval
   fdr = p.adjust(pval, method = "BH")
-  if (level == "peptide") {
-    elemList = data[, 1]
-  } else if (level == "protein") {
-    elemList = data[, 2]
-  }
-  rownames(subData) = elemList
+  rownames(subData) = entry
   result = data.frame(cbind(log2FC, pval, fdr))
   colnames(result) = c(paste0("Log2Fold_", comparisonNames), "p-value", "FDR")
   return (list(res = result, data = subData))
 }
 
-statTest = function (data, level, comparison) {
+statTest = function (data, entry, comparison) {
   ## Input arguments
   ##  data: data.frame of id_uni_pep_quan.xlsx or id_uni_prot_quan.xlsx file
   ##  level: analysis level - either "peptide" or "protein"
@@ -108,13 +99,13 @@ statTest = function (data, level, comparison) {
   
   if (nGroups == 2 & max(colSums(design)) == 1) {
     ## Cauchy test
-    res = cauchyTest(data, level, comparison, comparisonNames)
+    res = cauchyTest(data, entry, comparison, comparisonNames)
   } else if (nGroups > 2 && max(colSums(design)) == 1) {
     stop("For the comparison of multiple groups, replicates are required")
   } else {
     ## LIMMA running
     ## Statistical testing is performed to the "compSamples"
-    res = limmaTest(data, level, samples, comparison, comparisonNames, design, contMatrix)
+    res = limmaTest(data, entry, samples, comparison, comparisonNames, design, contMatrix)
   }
   return (res)
 }

@@ -1,44 +1,34 @@
 ## server.R
 rm(list = ls())
-library(readxl)
 library(ggplot2)
 library(pheatmap)
 library(DT)
 source("R/statTest.R")
 
 function (input, output) {
+	
+	######################################################
   ######################################################
   ## Unsupervised analysis, i.e. explorative analysis ##
   ######################################################
-  ## Load JUMP -q output file (either id_uni_pep_quan.xlsx or id_uni_prot_quan.xlsx)
+	######################################################
+  ## Load fully aligned feature table (xxx_fully_aligned.feature)
   data1 = reactive ({
     inFileName = input$inputFile1$name
-    if (length(grep("pep", inFileName))) {
-      tbl = read_excel(inFileName, skip = 4) # Peptide publication table
-      level = "peptide"
-    } else {
-      tbl = read_excel(inFileName, skip = 1) # Protein publication table
-      level = "protein"
-    }
-
-    ## Selection of a subset of data according to input parameters
-    list(data = as.data.frame(tbl), level = level)
+    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F))
   })
 
-  ## Selection of a data subset (highly variable)
-  ## This subset is for analyses
+  ##################################################
+  ## Selection of a data subset (highly variable) ##
+  ## This subset is for analyses                  ##
+  ##################################################
   subData1 = eventReactive(input$submit1, {
     rawData = data1()$data
-    level = data1()$level
-    if (level == "peptide") {
-      entry = rawData[, 1]
-    } else if (level == "protein") {
-      entry = rawData[, 2]
-    }
+    entry = paste0("feature", seq(1, dim(rawData)[1]))
 
     ## CV or MAD calcuation is based on log2-transformed intensities
     ## but output format is raw-intensity scale
-    colInd = grep("sig", colnames(rawData))
+    colInd = grep("Intensity", colnames(rawData))
     data = log(rawData[, colInd], 2)
     cv = apply(data, 1, sd) / rowMeans(data)
     mad = apply(abs(data - apply(data, 1, median)), 1, median)
@@ -59,15 +49,16 @@ function (input, output) {
     return (data)
   })
 
-
-  ## Selection of a data subset (highly variable)
-  ## This subset is for showing a data table and downloading a file
+	####################################################################
+  ## Selection of a data subset (highly variable)                   ##
+  ## This subset is for showing a data table and downloading a file ##
+  ####################################################################
   subData1_for_download = eventReactive(input$submit1, {
     rawData = data1()$data
 
     ## CV or MAD calcuation is based on log2-transformed intensities
     ## but output format is raw-intensity scale
-    colInd = grep("sig", colnames(rawData))
+    colInd = grep("Intensity", colnames(rawData))
     data = log(rawData[, colInd], 2)
     cv = apply(data, 1, sd) / rowMeans(data)
     mad = apply(abs(data - apply(data, 1, median)), 1, median)
@@ -81,10 +72,14 @@ function (input, output) {
     rawData[rowInd, ]
   })
 
-  ## PCA plot
+  ##############
+  ## PCA plot ##
+  ##############
   output$pcaPlot = renderPlot({
     reactive(input$submit1, {
       data = subData1()
+      colnames(data) = gsub("_Intensity", "", colnames(data))
+      
       ## Preparation of PCA result for visualization
       resPCA = prcomp(t(data), center = TRUE, scale = TRUE)
       eigs = resPCA$sdev ^ 2
@@ -98,26 +93,34 @@ function (input, output) {
       print(ggplot(data = resPCA[, 1:2], aes(PC1, PC2)) +
               geom_jitter(size = 3) +
               geom_text(aes(label = rownames(resPCA)), vjust = "inward", hjust = "inward", size = 5) +
-              labs(x = xlabPCA, y = ylabPCA) +
+							labs(x = xlabPCA, y = ylabPCA) +      				
               coord_fixed(ratioValue / ratioDisplay) +
-              theme(text = element_text(size = 12)))
+              theme(text = element_text(size = 12),
+              			axis.text = element_text(size = 14),
+              			axis.title = element_text(size = 14)))
     })
   })
-
+  
+  ############################
+  ## Heatmap and dendrogram ##
+  ############################
   output$hclustPlot = renderPlot({
     reactive(input$submit1, {
       data = subData1()
+      colnames(data) = gsub("_Intensity", "", colnames(data))
       color <- colorRampPalette(c("blue", "white", "red"))(n = 100)
       mat = as.matrix(data)
       mat = t(scale(t(mat), center = T, scale = F)) # Only mean-centering
       limVal = round(min(abs(min(mat)), abs(max(mat))))
       matBreaks = seq(-limVal, limVal, length.out = 100)
       pheatmap(mat = mat, color = color, breaks = matBreaks, show_rownames = F,
-               clustering_method = "ward.D2", fontsize = 12)
+               clustering_method = "ward.D2", fontsize = 15)
     })
   })
 
-  ## Data table
+  ################
+  ## Data table ##
+  ################
   output$dataTable1 = DT::renderDataTable({
     data = subData1()
     ## Since data is log2-transformed,
@@ -126,9 +129,12 @@ function (input, output) {
     data = round(2 ** data, digits = 2)
   }, options = list(scrollX = TRUE))
 
-  ## Plot of the selected rows from the data table
+  ###################################################
+  ## Plot of the selected rows from the data table ##
+  ###################################################
   output$plotDataTable1 = renderPlot({
     data = subData1()
+    colnames(data) = gsub("_Intensity", "", colnames(data))
     ## Since data is log2-transformed,
     ## it needs to be re-transformed to raw-scale intensity levels
     ## for showing a data table
@@ -141,7 +147,9 @@ function (input, output) {
     }
   })
   
-  ## Download the subset of data (exploratory analysis)
+  ########################################################
+  ## Download the subset of data (exploratory analysis) ##
+  ########################################################
   output$download1= downloadHandler(
     filename = "exploratory_subset.txt",
     content = function(file) {
@@ -150,21 +158,14 @@ function (input, output) {
   )
 
   ################################################################
+  ################################################################
   ## Supervised analysis, i.e. differential expression analysis ##
+  ################################################################
   ################################################################
   ## Load JUMP -q output file (either id_uni_pep_quan.xlsx or id_uni_prot_quan.xlsx)
   data2 = reactive ({
     inFileName = input$inputFile2$name
-    if (length(grep("pep", inFileName))) {
-      tbl = read_excel(inFileName, skip = 4) # Peptide publication table
-      level = "peptide"
-    } else {
-      tbl = read_excel(inFileName, skip = 1) # Protein publication table
-      level = "protein"
-    }
-
-    ## Selection of a subset of data according to input parameters
-    list(data = as.data.frame(tbl), level = level)
+    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F))
   })
 
   ## Specificiation of groups of samples
@@ -173,7 +174,7 @@ function (input, output) {
       output$groups2 = renderUI({
         data = data2()$data
         nGroups = nGroups()
-        colSampleNames = grep('sig', colnames(data))
+        colSampleNames = grep('Intensity', colnames(data))
         sampleNames = colnames(data)[colSampleNames]
         lapply (1:nGroups, function(i) {
           checkboxGroupInput(inputId = paste0("Group", i), label = paste("Group", i),
@@ -182,11 +183,13 @@ function (input, output) {
     })
   })
 
-  ## Differentially expressed peptides/proteins
+  ################################################
+  ## Differentially expressed peptides/proteins ##
+  ################################################
   statRes = eventReactive(input$submit2, {
     data = data2()$data
-    level = data2()$level
-    nGroups = nGroups()
+    entry = paste0("feature", seq(1, dim(data)[1]))
+		nGroups = nGroups()
     comparison = as.character()
     compSamples = as.character()
     for (g in 1:nGroups) {
@@ -199,10 +202,12 @@ function (input, output) {
       groups[[g]] = unlist(strsplit(comparison[g], ","))
       compSamples = c(compSamples, groups[[g]])
     }
-    statTest(data, level, comparison)
+    statTest(data, entry, comparison)
   })
 
-  ## A subset of data selected based on "statRes"
+  ##################################################
+  ## A subset of data selected based on "statRes" ##
+  ##################################################
   subData2 = eventReactive(input$submit2, {
     nGroups = nGroups()
     statRes = statRes()
@@ -220,8 +225,10 @@ function (input, output) {
     data = data[rowInd, ]
   })
   
-  ## A subset of data selected based on "statRes"
-  ## This subset is for showing a data table and downloading a file
+  ####################################################################
+  ## A subset of data selected based on "statRes"                   ##
+  ## This subset is for showing a data table and downloading a file ##
+  ####################################################################
   subData2_for_download = eventReactive(input$submit2, {
     ## For downloading, "data" should be a subset of raw data
     data = data2()$data
@@ -241,12 +248,14 @@ function (input, output) {
     rowInd = which(statRes$res[[sigMetric]] < sigCutoff & resLogFC >= logFC)
     
     ## Re-organization of an output table
-    colInd = max(grep('sig', colnames(data)))
+    colInd = max(grep('Intensity', colnames(data)))
     data = cbind(data[rowInd, 1:colInd], statRes$res[rowInd, -1])
   })
   
-  ## Volcano plot of differential expression analysis
-  ## - "statRes" can be directly used
+  ######################################################
+  ## Volcano plot of differential expression analysis ##
+  ## - "statRes" can be directly used                 ##
+  ######################################################
   output$volcanoPlot = renderPlot({
     ## Preparation of PCA result for visualization
     res = statRes()$res
@@ -277,8 +286,10 @@ function (input, output) {
       theme(text = element_text(size = 20))
   })
   
-  ## Heatmap of differentially expressed peptides/proteins
-  ## Differentially expressed elements selected by "statRes" should be used
+  ############################################################################
+  ## Heatmap of differentially expressed peptides/proteins                  ##
+  ## Differentially expressed elements selected by "statRes" should be used ##
+  ############################################################################
   output$hclustDE = renderPlot({
     reactive(input$submit2, {
       data = subData2()
@@ -293,8 +304,10 @@ function (input, output) {
     })
   })
   
-  ## Data table
-  ## Differentially expressed elements selected by "statRes" should be used
+  ############################################################################
+  ## Data table                                                             ##
+  ## Differentially expressed elements selected by "statRes" should be used ##
+  ############################################################################
   output$dataTable2 = DT::renderDataTable({
     ## Since data is log2-transformed,
     ## it needs to be re-transformed to raw-scale intensity levels
@@ -303,7 +316,9 @@ function (input, output) {
     data = round(2 ** data, digits = 2)
   }, options = list(scrollX = TRUE))
   
-  ## Plot of the selected rows from the data table
+  ###################################################
+  ## Plot of the selected rows from the data table ##
+  ###################################################
   output$plotDataTable2 = renderPlot({
     ## Since data is log2-transformed,
     ## it needs to be re-transformed to raw-scale intensity levels
@@ -318,7 +333,9 @@ function (input, output) {
     }
   })
   
-  ## Download the subset of data (exploratory analysis)
+  ########################################################
+  ## Download the subset of data (exploratory analysis) ##
+  ########################################################
   output$download2= downloadHandler(
     filename = "differentially_expressed_subset.txt",
     content = function(file) {

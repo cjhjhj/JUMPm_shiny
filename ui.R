@@ -4,26 +4,25 @@ fluidPage(
   # headerPanel("Analysis and visualization of JUMP quantification results"),
   
   navbarPage(
-    "JUMP Quantification",
+    "JUMPm: metabolomics data analysis",
     tabPanel(
       "Exploratory data analysis",
       ## Sidebar panel controlling an exploratory data analysis
       sidebarPanel(
-        p("In this panel, you can perform explorative data analyses for your proteomics dataset."),
+        p("In this panel, you can perform explorative data analyses for your metabolomics dataset."),
         p("1. PCA (principal component analysis) plot of samples"),
-        p("2. Hierarchical clustering result of samples and peptides/proteins"),
-        p("3. Data table of highly variant peptides/proteins"),
+        p("2. Hierarchical clustering result of samples and features"),
+        p("3. Data table of highly variant features"),
         br(),
         fileInput(
           "inputFile1", 
           label = HTML("Choose a file<br />
-                      id_uni_pep_quan.xlsx or<br />
-                      id_uni_prot_quan.xlsx")
+                      e.g. example_fully_aligned.feature")
         ),
         numericInput(
           "variant1", 
           label = HTML("Proportion of highly variant elements<br />
-                      (e.g. if you choose 10, top 10% of highly variant peptides/proteins
+                      (e.g. if you choose 10, top 10% of highly variant features
                       will be used)"), value = 10
         ),
         selectInput(
@@ -45,7 +44,7 @@ fluidPage(
             plotOutput("pcaPlot", height = "600px")
           ),
           tabPanel(
-            "Heatmap of the subset of peptides/proteins",
+            "Heatmap of the subset of features",
             br(),
             plotOutput("hclustPlot", height = "700px", width = "500px")
           ),
@@ -67,16 +66,15 @@ fluidPage(
       "Differential expression",
       ## Sidebar panel controlling an exploratory data analysis
       sidebarPanel(
-        p("This panel provides differential expression analysis results for your proteomics dataset."),
+        p("This panel provides differential expression analysis results for your metabolomics dataset."),
         p("1. For two group comparison, a volcano plot and heatmap will be provided"),
         p("2. For three or more group comparison, a heatmap will be provided"),
-        p("3. Data table of differentially expressed peptides/proteins"),
+        p("3. Data table of differentially expressed features"),
         br(),
         fileInput(
           "inputFile2",
           label = HTML("Choose a file<br />
-                       id_uni_pep_quan.xlsx or<br />
-                       id_uni_prot_quan.xlsx")
+                       e.g. example_fully_aligned.feature")
         ),
         numericInput(
           "numGroups2",
@@ -107,7 +105,7 @@ fluidPage(
             plotOutput("volcanoPlot", height = "600px")
           ),
           tabPanel(
-            "Heatmap of differentially expressed peptides/proteins",
+            "Heatmap of differentially expressed features",
             br(),
             plotOutput("hclustDE", height = "700px", width = "500px")
           ),
