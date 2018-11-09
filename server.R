@@ -15,7 +15,7 @@ function (input, output) {
   ## Load fully aligned feature table (xxx_fully_aligned.feature)
   data1 = reactive ({
     inFileName = input$inputFile1$name
-    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F))
+    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F, comment.char = ""))
   })
 
   ##################################################
@@ -165,7 +165,7 @@ function (input, output) {
   ## Load JUMP -q output file (either id_uni_pep_quan.xlsx or id_uni_prot_quan.xlsx)
   data2 = reactive ({
     inFileName = input$inputFile2$name
-    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F))
+    list(data = read.table(inFileName, header = T, sep = "\t", check.names = F, comment.char = ""))
   })
 
   ## Specificiation of groups of samples
