@@ -8,7 +8,7 @@ source("R/statTest.R")
 function (input, output) {
     
     ## Increase the maximum size of uploaded file (up to 30MB)
-    shiny.maxRequestSize = 30 * 1024 ^ 2
+    options(shiny.maxRequestSize = 30 * (1024 ^ 2))
     
     ######################################################
     ######################################################
@@ -17,8 +17,11 @@ function (input, output) {
     ######################################################
     ## Load fully aligned feature table (xxx_fully_aligned.feature)
     data1 = reactive ({
+        ## Desktop version
         inFileName = input$inputFile1$name
         list(data = read.table(inFileName, header = T, sep = "\t", check.names = F, comment.char = ""))
+        ## Server version
+        list(data = read.table(input$inputFile1$datapath, header = T, sep = "\t", check.names = F, comment.char = ""))
     })
     
     ##################################################
@@ -167,8 +170,11 @@ function (input, output) {
     ################################################################
     ## Load JUMP -q output file (either id_uni_pep_quan.xlsx or id_uni_prot_quan.xlsx)
     data2 = reactive ({
+        ## Desktop version
         inFileName = input$inputFile2$name
         list(data = read.table(inFileName, header = T, sep = "\t", check.names = F, comment.char = ""))
+        ## Server version
+        list(data = read.table(input$inputFile2$datapath, header = T, sep = "\t", check.names = F, comment.char = ""))
     })
     
     ## Specificiation of groups of samples
