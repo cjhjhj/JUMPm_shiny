@@ -133,7 +133,7 @@ function (input, output) {
         ## it needs to be re-transformed to raw-scale intensity levels
         ## for showing a data table
         data = round(2 ** data, digits = 2)
-    }, options = list(scrollX = TRUE))
+    }, selection = 'single', options = list(scrollX = TRUE))
     
     ###################################################
     ## Plot of the selected rows from the data table ##
@@ -323,7 +323,7 @@ function (input, output) {
         ## for showing a data table
         data = subData2()
         data = round(2 ** data, digits = 2)
-    }, options = list(scrollX = TRUE))
+    }, selection = 'single', options = list(scrollX = TRUE))
     
     ###################################################
     ## Plot of the selected rows from the data table ##
