@@ -3,12 +3,8 @@ rm(list = ls())
 library(ggplot2)
 library(gplots)
 library(DT)
-library(curl)
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install()
-
 source("R/statTest.R")
+
 function (input, output) {
     
     ## Increase the maximum size of uploaded file (up to 30MB)
@@ -38,7 +34,7 @@ function (input, output) {
         
         ## CV or MAD calcuation is based on log2-transformed intensities
         ## but output format is raw-intensity scale
-        colInd = grep("intensity", tolower(colnames(rawData)))
+        colInd = grep("Intensity", colnames(rawData))
         data = log(rawData[, colInd], 2)
         cv = apply(data, 1, sd) / rowMeans(data)
         mad = apply(abs(data - apply(data, 1, median)), 1, median)
@@ -68,7 +64,7 @@ function (input, output) {
         
         ## CV or MAD calcuation is based on log2-transformed intensities
         ## but output format is raw-intensity scale
-        colInd = grep("intensity", tolower(colnames(rawData)))
+        colInd = grep("Intensity", colnames(rawData))
         data = log(rawData[, colInd], 2)
         cv = apply(data, 1, sd) / rowMeans(data)
         mad = apply(abs(data - apply(data, 1, median)), 1, median)
@@ -89,7 +85,6 @@ function (input, output) {
         reactive(input$submit1, {
             data = subData1()
             colnames(data) = gsub("_Intensity", "", colnames(data))
-            colnames(data) = gsub("_intensity", "", colnames(data))
             
             ## Preparation of PCA result for visualization
             resPCA = prcomp(t(data), center = TRUE, scale = TRUE)
@@ -119,7 +114,6 @@ function (input, output) {
         reactive(input$submit1, {
             data = subData1()
             colnames(data) = gsub("_Intensity", "", colnames(data))
-            colnames(data) = gsub("_intensity", "", colnames(data))
             mat = as.matrix(data)
             mat = t(scale(t(mat), center = T, scale = F)) # Only mean-centering
             limVal = round(min(abs(min(mat)), abs(max(mat))))
@@ -151,7 +145,6 @@ function (input, output) {
     output$plotDataTable1 = renderPlot({
         data = subData1()
         colnames(data) = gsub("_Intensity", "", colnames(data))
-        colnames(data) = gsub("_intensity", "", colnames(data))
         ## Since data is log2-transformed,
         ## it needs to be re-transformed to raw-scale intensity levels
         ## for showing a data table
@@ -211,7 +204,7 @@ function (input, output) {
         output$groups2 = renderUI({
             data = data2()$data
             nGroups = nGroups()
-            colSampleNames = grep('intensity', tolower(colnames(data)))
+            colSampleNames = grep('Intensity', colnames(data))
             sampleNames = colnames(data)[colSampleNames]
             lapply (1:nGroups, function(i) {
                 checkboxGroupInput(inputId = paste0("Group", i), label = paste("Group", i),
@@ -285,7 +278,7 @@ function (input, output) {
         rowInd = which(statRes$res[[sigMetric]] < sigCutoff & resLogFC >= logFC)
         
         ## Re-organization of an output table
-        colInd = max(grep('intensity', tolower(colnames(data))))
+        colInd = max(grep('Intensity', colnames(data)))
         data = cbind(data[rowInd, 1:colInd], statRes$res[rowInd, -1])
     })
     
