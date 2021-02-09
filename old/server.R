@@ -260,6 +260,7 @@ function (input, output) {
         }
         rowInd = which(statRes$res[[sigMetric]] < sigCutoff & resLogFC >= logFC)
         data = data[rowInd, ]
+        return(data)
     })
     
     ####################################################################

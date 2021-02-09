@@ -1,0 +1,13 @@
+name: jump_m
+title: jump_m
+username: jcho
+account: jcho
+server: svlprshiny01.stjude.org
+hostUrl: http://svlprshiny01.stjude.org/__api__
+appId: 9
+bundleId: 11
+url: http://svlprshiny01.stjude.org/content/9/
+when: 1612899870.37247
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: example_fully_aligned.feature|test_fully_aligned.feature|old
