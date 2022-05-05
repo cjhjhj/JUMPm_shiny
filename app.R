@@ -9,7 +9,7 @@ source("statTest.R")
 
 server = function (input, output) {
     # Increase the maximum size of uploaded file (up to 30MB)
-    options(shiny.maxRequestSize = 30 * (1024 ^ 2))
+    options(shiny.maxRequestSize = 500 * (1024 ^ 2))
     
     ####################################################
     # Unsupervised analysis, i.e. explorative analysis #
